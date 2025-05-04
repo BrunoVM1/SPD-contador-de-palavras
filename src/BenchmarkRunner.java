@@ -5,7 +5,9 @@ import java.util.Locale;
 public class BenchmarkRunner {
 
     private static final int REPETICOES = 30;
-    private static final String PALAVRA = "clarissa";
+    private static final String[] PALAVRAS = {
+            "clarissa", "lovelace", "letter", "dear", "miss", "virtue"
+    };
 
     public static void main(String[] args) throws IOException {
         String texto = TextLoader.loadText("clarissa.txt");
@@ -20,25 +22,31 @@ public class BenchmarkRunner {
     private static void rodarBenchmark(String nome, WordCounter contador, String texto) throws IOException {
         String nomeArquivo = nome.toLowerCase(Locale.ROOT) + ".txt";
         FileWriter csv = new FileWriter(nomeArquivo);
-        csv.write("Execução,Tempo (s)\n");
+        csv.write("Palavra,Execução,Tempo (s)\n");
 
-        double soma = 0;
+        double somaTotal = 0;
+        int totalExecucoes = PALAVRAS.length * REPETICOES;
 
-        for (int i = 1; i <= REPETICOES; i++) {
-            long inicio = System.nanoTime();
-            contador.countOccurrences(texto, PALAVRA);
-            long fim = System.nanoTime();
+        for (String palavra : PALAVRAS) {
+            for (int i = 1; i <= REPETICOES; i++) {
+                long inicio = System.nanoTime();
+                contador.countOccurrences(texto, palavra);
+                long fim = System.nanoTime();
 
-            double tempo = (fim - inicio) / 1_000_000_000.0;
-            soma += tempo;
+                double tempo = (fim - inicio) / 1_000_000_000.0;
+                somaTotal += tempo;
 
-            csv.write(i + "," + String.format(Locale.US, "%.6f", tempo) + "\n");
+                csv.write(palavra + "," + i + "," + String.format(Locale.US, "%.6f", tempo) + "\n");
+            }
         }
 
-        double media = soma / REPETICOES;
-        csv.write("Média," + String.format(Locale.US, "%.6f", media) + "\n");
-        csv.close();
+        double mediaGeral = somaTotal / totalExecucoes;
 
-        System.out.printf("Benchmark %s finalizado. Média: %.3f segundos.%n", nome, media);
+        // Escreve média geral ao final do arquivo
+        csv.write("\nMédia Geral,,");
+        csv.write(String.format(Locale.US, "%.6f", mediaGeral) + "\n");
+
+        csv.close();
+        System.out.printf("Benchmark %s finalizado e salvo em %s.%n", nome, nomeArquivo);
     }
 }
