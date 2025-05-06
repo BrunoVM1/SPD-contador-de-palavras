@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ParallelWordCounter implements WordCounter {
     private final int threadCount;
@@ -22,8 +24,8 @@ public class ParallelWordCounter implements WordCounter {
             int end = (i == threadCount - 1) ? length : (i + 1) * blockSize;
 
             // Corrigir divisões no meio das palavras
-            while (start > 0 && Character.isLetter(text.charAt(start - 1))) start--;
-            while (end < text.length() && Character.isLetter(text.charAt(end))) end++;
+            while (start > 0 && Character.isLetterOrDigit(text.charAt(start - 1))) start--;
+            while (end < text.length() && Character.isLetterOrDigit(text.charAt(end))) end++;
 
             String chunk = text.substring(start, end);
             Callable<Integer> task = () -> countInChunk(chunk, word);
@@ -46,19 +48,12 @@ public class ParallelWordCounter implements WordCounter {
 
     private int countInChunk(String text, String word) {
         int count = 0;
-        int index = 0;
-        String lowerText = text.toLowerCase();
-        String target = word.toLowerCase();
+        // Criar regex com limites de palavra (\b) e escapando a palavra
+        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(word.toLowerCase()) + "\\b");
+        Matcher matcher = pattern.matcher(text.toLowerCase());
 
-        while ((index = lowerText.indexOf(target, index)) != -1) {
-            boolean isWordBoundaryBefore = (index == 0 || !Character.isLetter(lowerText.charAt(index - 1)));
-            boolean isWordBoundaryAfter = (index + target.length() == lowerText.length()
-                    || !Character.isLetter(lowerText.charAt(index + target.length())));
-
-            if (isWordBoundaryBefore && isWordBoundaryAfter) {
-                count++;
-            }
-            index += target.length();
+        while (matcher.find()) {
+            count++;
         }
 
         return count;
